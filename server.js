@@ -44,6 +44,10 @@ const app = express();
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Clean URLs, so /control and /display work without typing ".html"
+app.get('/control', (req, res) => res.sendFile(path.join(__dirname, 'public', 'control.html')));
+app.get('/display', (req, res) => res.sendFile(path.join(__dirname, 'public', 'display.html')));
+
 // Simple REST endpoints (handy for debugging / curl, not required for normal use)
 app.get('/api/state', (req, res) => res.json({ rooms: ROOM_IDS, state }));
 
@@ -55,7 +59,7 @@ io.on('connection', (socket) => {
   // or the control panel that watches every room.
   socket.on('display:join', (room) => {
     if (!ROOM_IDS.includes(String(room))) return;
-    socket.join(`room:${room}`);
+    socket.join(room:${room});
     socket.emit('display:update', state[room]);
   });
 
@@ -69,7 +73,7 @@ io.on('connection', (socket) => {
     const trimmed = (name || '').trim();
     state[room] = { name: trimmed, updatedAt: Date.now() };
     saveState();
-    io.to(`room:${room}`).emit('display:update', state[room]);
+    io.to(room:${room}).emit('display:update', state[room]);
     io.to('control').emit('control:state', { rooms: ROOM_IDS, state });
   });
 
@@ -77,13 +81,13 @@ io.on('connection', (socket) => {
     if (!ROOM_IDS.includes(String(room))) return;
     state[room] = { name: '', updatedAt: Date.now() };
     saveState();
-    io.to(`room:${room}`).emit('display:update', state[room]);
+    io.to(room:${room}).emit('display:update', state[room]);
     io.to('control').emit('control:state', { rooms: ROOM_IDS, state });
   });
 });
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-  console.log(`Welcome screen server running on port ${PORT}`);
-  console.log(`Rooms: ${ROOM_IDS.join(', ')}`);
+  console.log(Welcome screen server running on port ${PORT});
+  console.log(Rooms: ${ROOM_IDS.join(', ')});
 });
