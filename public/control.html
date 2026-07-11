@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Room Displays — Control</title>
+<style>
+  :root {
+    --ink: #1b1f23;
+    --muted: #6b7280;
+    --line: #e5e7eb;
+    --accent: #2b4c3f;
+    --accent-soft: #eef3f0;
+    --bg: #fafaf9;
+    --danger: #b3402f;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    padding: 24px;
+  }
+  h1 {
+    font-size: 20px;
+    font-weight: 600;
+    margin: 0 0 4px;
+  }
+  .sub {
+    color: var(--muted);
+    font-size: 14px;
+    margin: 0 0 28px;
+  }
+  .rooms {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
+    max-width: 960px;
+  }
+  .room-card {
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 20px;
+  }
+  .room-card h2 {
+    font-size: 15px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    margin: 0 0 14px;
+  }
+  .current {
+    font-size: 15px;
+    margin: 0 0 16px;
+    min-height: 20px;
+  }
+  .current .name {
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .current .empty {
+    color: var(--muted);
+    font-style: italic;
+  }
+  input[type="text"] {
+    width: 100%;
+    padding: 10px 12px;
+    font-size: 15px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    margin-bottom: 10px;
+  }
+  input[type="text"]:focus {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+  .btn-row { display: flex; gap: 8px; }
+  button {
+    font-size: 14px;
+    font-weight: 600;
+    padding: 10px 14px;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    cursor: pointer;
+  }
+  .btn-primary {
+    background: var(--accent);
+    color: #fff;
+    flex: 1;
+  }
+  .btn-primary:hover { opacity: 0.92; }
+  .btn-clear {
+    background: #fff;
+    border-color: var(--line);
+    color: var(--danger);
+  }
+  .btn-clear:hover { background: #fbf1ef; }
+  .status-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 6px;
+    background: #cbd5c9;
+  }
+  .status-dot.on { background: #3f8a5c; }
+  #conn {
+    position: fixed;
+    top: 20px;
+    right: 24px;
+    font-size: 13px;
+    color: var(--muted);
+  }
+</style>
+</head>
+<body>
+  <div id="conn"><span class="status-dot" id="dot"></span><span id="connText">Connecting…</span></div>
+  <h1>Room Displays</h1>
+  <p class="sub">Type a patient's name and press Show — it appears on that room's TV immediately.</p>
+
+  <div class="rooms" id="rooms"></div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+    const roomsEl = document.getElementById('rooms');
+    const dot = document.getElementById('dot');
+    const connText = document.getElementById('connText');
+    let roomIds = [];
+
+    socket.on('connect', () => {
+      dot.classList.add('on');
+      connText.textContent = 'Connected';
+      socket.emit('control:join');
+    });
+    socket.on('disconnect', () => {
+      dot.classList.remove('on');
+      connText.textContent = 'Reconnecting…';
+    });
+
+    function render(rooms, state) {
+      roomIds = rooms;
+      roomsEl.innerHTML = rooms.map(id => {
+        const entry = state[id] || { name: '' };
+        const currentHtml = entry.name
+          ? `Now showing: <span class="name">${escapeHtml(entry.name)}</span>`
+          : `<span class="empty">No name set — showing idle screen</span>`;
+        return `
+          <div class="room-card">
+            <h2>Room ${escapeHtml(id)}</h2>
+            <p class="current">${currentHtml}</p>
+            <input type="text" id="input-${id}" placeholder="Patient name" value="" />
+            <div class="btn-row">
+              <button class="btn-primary" onclick="showName('${id}')">Show</button>
+              <button class="btn-clear" onclick="clearRoom('${id}')">Clear</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      rooms.forEach(id => {
+        const input = document.getElementById(`input-${id}`);
+        input.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') showName(id);
+        });
+      });
+    }
+
+    function showName(id) {
+      const input = document.getElementById(`input-${id}`);
+      const name = input.value.trim();
+      if (!name) return;
+      socket.emit('control:setName', { room: id, name });
+      input.value = '';
+    }
+
+    function clearRoom(id) {
+      socket.emit('control:clear', { room: id });
+    }
+
+    function escapeHtml(str) {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    socket.on('control:state', ({ rooms, state }) => render(rooms, state));
+  </script>
+</body>
+</html>
