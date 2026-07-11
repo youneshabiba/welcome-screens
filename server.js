@@ -14,8 +14,10 @@ const { Server } = require('socket.io');
 
 const STATE_FILE = path.join(__dirname, 'state.json');
 
-// Which rooms exist. Override with ROOMS="1,2,3,4" as an env var if you add rooms.
-const ROOM_IDS = (process.env.ROOMS || '1,2,3').split(',').map(s => s.trim());
+// Which rooms exist. Format is BRANCH-ROOMNUMBER. Override with a ROOMS env
+// var (comma-separated) on Render if you add/rename branches or rooms later.
+const ROOM_IDS = (process.env.ROOMS || 'RDC1-1,RDC1-2,RDC1-3,RDC2-1,RDC2-2,RDC2-3')
+  .split(',').map(s => s.trim());
 
 function loadState() {
   try {
@@ -59,7 +61,7 @@ io.on('connection', (socket) => {
   // or the control panel that watches every room.
   socket.on('display:join', (room) => {
     if (!ROOM_IDS.includes(String(room))) return;
-    socket.join(`room:${room}`);
+    socket.join('room:' + room);
     socket.emit('display:update', state[room]);
   });
 
@@ -73,7 +75,7 @@ io.on('connection', (socket) => {
     const trimmed = (name || '').trim();
     state[room] = { name: trimmed, updatedAt: Date.now() };
     saveState();
-    io.to(`room:${room}`).emit('display:update', state[room]);
+    io.to('room:' + room).emit('display:update', state[room]);
     io.to('control').emit('control:state', { rooms: ROOM_IDS, state });
   });
 
@@ -81,13 +83,13 @@ io.on('connection', (socket) => {
     if (!ROOM_IDS.includes(String(room))) return;
     state[room] = { name: '', updatedAt: Date.now() };
     saveState();
-    io.to(`room:${room}`).emit('display:update', state[room]);
+    io.to('room:' + room).emit('display:update', state[room]);
     io.to('control').emit('control:state', { rooms: ROOM_IDS, state });
   });
 });
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-  console.log(`Welcome screen server running on port ${PORT}`);
-  console.log(`Rooms: ${ROOM_IDS.join(', ')}`);
+  console.log('Welcome screen server running on port ' + PORT);
+  console.log('Rooms: ' + ROOM_IDS.join(', '));
 });
