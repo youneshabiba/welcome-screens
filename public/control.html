@@ -3,15 +3,15 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Room Displays — Control</title>
+<title>Royal Dental Care — Room Displays</title>
 <style>
   :root {
     --ink: #1b1f23;
     --muted: #6b7280;
     --line: #e5e7eb;
-    --accent: #2b4c3f;
-    --accent-soft: #eef3f0;
-    --bg: #fafaf9;
+    --accent: #a24a1f;
+    --accent-soft: #f7ece3;
+    --bg: #faf8f5;
     --danger: #b3402f;
   }
   * { box-sizing: border-box; }
@@ -32,6 +32,16 @@
     font-size: 14px;
     margin: 0 0 28px;
   }
+  .branch-links {
+    font-size: 13px;
+    margin: -18px 0 24px;
+  }
+  .branch-links a {
+    color: var(--accent);
+    text-decoration: none;
+    margin-right: 16px;
+  }
+  .branch-links a:hover { text-decoration: underline; }
   .rooms {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -117,62 +127,101 @@
 </head>
 <body>
   <div id="conn"><span class="status-dot" id="dot"></span><span id="connText">Connecting…</span></div>
-  <h1>Room Displays</h1>
+  <h1 id="heading">Royal Dental Care — Room Displays</h1>
   <p class="sub">Type a patient's name and press Show — it appears on that room's TV immediately.</p>
+  <p class="branch-links" id="branchLinks"></p>
 
   <div class="rooms" id="rooms"></div>
 
   <script src="/socket.io/socket.io.js"></script>
   <script>
-    const socket = io();
-    const roomsEl = document.getElementById('rooms');
-    const dot = document.getElementById('dot');
-    const connText = document.getElementById('connText');
-    let roomIds = [];
+    var socket = io();
+    var roomsEl = document.getElementById('rooms');
+    var dot = document.getElementById('dot');
+    var connText = document.getElementById('connText');
+    var heading = document.getElementById('heading');
+    var branchLinksEl = document.getElementById('branchLinks');
 
-    socket.on('connect', () => {
+    // ?branch=RDC1 shows only that branch's rooms. No param shows everything.
+    var branchFilter = new URLSearchParams(location.search).get('branch');
+
+    socket.on('connect', function () {
       dot.classList.add('on');
       connText.textContent = 'Connected';
       socket.emit('control:join');
     });
-    socket.on('disconnect', () => {
+    socket.on('disconnect', function () {
       dot.classList.remove('on');
       connText.textContent = 'Reconnecting…';
     });
 
-    function render(rooms, state) {
-      roomIds = rooms;
-      roomsEl.innerHTML = rooms.map(id => {
-        const entry = state[id] || { name: '' };
-        const currentHtml = entry.name
-          ? `Now showing: <span class="name">${escapeHtml(entry.name)}</span>`
-          : `<span class="empty">No name set — showing idle screen</span>`;
-        return `
-          <div class="room-card">
-            <h2>Room ${escapeHtml(id)}</h2>
-            <p class="current">${currentHtml}</p>
-            <input type="text" id="input-${id}" placeholder="Patient name" value="" />
-            <div class="btn-row">
-              <button class="btn-primary" onclick="showName('${id}')">Show</button>
-              <button class="btn-clear" onclick="clearRoom('${id}')">Clear</button>
-            </div>
-          </div>
-        `;
+    function branchOf(id) { return id.split('-')[0]; }
+    function roomLabelOf(id) {
+      var parts = id.split('-');
+      return 'Room ' + (parts[1] || parts[0]);
+    }
+    function escapeHtml(str) {
+      var div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    function render(allRoomIds, state) {
+      var branches = [];
+      allRoomIds.forEach(function (id) {
+        var b = branchOf(id);
+        if (branches.indexOf(b) === -1) branches.push(b);
+      });
+
+      // Links to jump between branch-specific control views
+      if (branches.length > 1) {
+        branchLinksEl.innerHTML = branches.map(function (b) {
+          return '<a href="/control?branch=' + encodeURIComponent(b) + '">' + escapeHtml(b) + ' only</a>';
+        }).join('') + '<a href="/control">All branches</a>';
+      } else {
+        branchLinksEl.innerHTML = '';
+      }
+
+      var visibleIds = branchFilter
+        ? allRoomIds.filter(function (id) { return branchOf(id) === branchFilter; })
+        : allRoomIds;
+
+      heading.textContent = branchFilter
+        ? 'Royal Dental Care — ' + branchFilter
+        : 'Royal Dental Care — Room Displays';
+
+      roomsEl.innerHTML = visibleIds.map(function (id) {
+        var entry = state[id] || { name: '' };
+        var currentHtml = entry.name
+          ? 'Now showing: <span class="name">' + escapeHtml(entry.name) + '</span>'
+          : '<span class="empty">No name set — showing idle screen</span>';
+        var cardLabel = branches.length > 1 ? (branchOf(id) + ' — ' + roomLabelOf(id)) : roomLabelOf(id);
+        return (
+          '<div class="room-card">' +
+            '<h2>' + escapeHtml(cardLabel) + '</h2>' +
+            '<p class="current">' + currentHtml + '</p>' +
+            '<input type="text" id="input-' + id + '" placeholder="Patient name" value="" />' +
+            '<div class="btn-row">' +
+              '<button class="btn-primary" onclick="showName(\'' + id + '\')">Show</button>' +
+              '<button class="btn-clear" onclick="clearRoom(\'' + id + '\')">Clear</button>' +
+            '</div>' +
+          '</div>'
+        );
       }).join('');
 
-      rooms.forEach(id => {
-        const input = document.getElementById(`input-${id}`);
-        input.addEventListener('keydown', (e) => {
+      visibleIds.forEach(function (id) {
+        var input = document.getElementById('input-' + id);
+        input.addEventListener('keydown', function (e) {
           if (e.key === 'Enter') showName(id);
         });
       });
     }
 
     function showName(id) {
-      const input = document.getElementById(`input-${id}`);
-      const name = input.value.trim();
+      var input = document.getElementById('input-' + id);
+      var name = input.value.trim();
       if (!name) return;
-      socket.emit('control:setName', { room: id, name });
+      socket.emit('control:setName', { room: id, name: name });
       input.value = '';
     }
 
@@ -180,13 +229,9 @@
       socket.emit('control:clear', { room: id });
     }
 
-    function escapeHtml(str) {
-      const div = document.createElement('div');
-      div.textContent = str;
-      return div.innerHTML;
-    }
-
-    socket.on('control:state', ({ rooms, state }) => render(rooms, state));
+    socket.on('control:state', function (payload) {
+      render(payload.rooms, payload.state);
+    });
   </script>
 </body>
 </html>
