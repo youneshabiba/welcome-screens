@@ -8,11 +8,11 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <!--
   Playfair Display = Latin name text (elegant italic serif)
-  Amiri            = Arabic serif fallback — same "serif" family feeling
-                      for Arabic patient names. Browsers auto-pick whichever
-                      font in the stack actually has glyphs for each
-                      character, so Latin names use Playfair and Arabic
-                      names use Amiri automatically, no extra logic needed.
+  Amiri            = Arabic serif fallback — same "serif" feeling for
+                      Arabic patient names. Browsers auto-pick whichever
+                      font in the stack has glyphs for each character,
+                      so Latin names use Playfair and Arabic names use
+                      Amiri automatically, no extra logic needed.
   Montserrat       = clean geometric sans for small labels, closest
                       widely-available match to the logo's wordmark style
 -->
@@ -33,9 +33,7 @@
     overflow: hidden;
   }
   body {
-    display: flex;
-    align-items: flex-end;
-    justify-content: center;
+    position: relative;
     font-family: var(--font-label);
     color: var(--ink);
     background-image: url('/bg.jpg');
@@ -45,24 +43,24 @@
   }
 
   /*
-    The background image already carries the ROYAL wordmark (roughly the
-    middle band of the screen) and the large "R" watermark, so the welcome
-    text sits in the clear space below it rather than on top of it.
+    The background image's logo band was removed (inpainted) so this text
+    block sits in that same space instead of overlapping it.
   */
   .stage {
-    position: relative;
-    text-align: center;
-    padding: 0 6vw 8vh;
-    width: 100%;
+    position: absolute;
+    left: 13%;
+    top: 30%;
+    max-width: 62%;
+    text-align: left;
   }
 
   .eyebrow {
     font-family: var(--font-label);
-    font-size: clamp(13px, 1.4vw, 18px);
+    font-size: clamp(16px, 1.7vw, 40px);
     letter-spacing: 0.5em;
     text-transform: uppercase;
     color: var(--ink-soft);
-    margin: 0 0 22px;
+    margin: 0 0 3.5vh;
     opacity: 0;
   }
 
@@ -70,26 +68,35 @@
     font-family: var(--font-display);
     font-style: italic;
     font-weight: 500;
-    font-size: clamp(44px, 6.4vw, 92px);
+    font-size: clamp(60px, 7.8vw, 170px);
     line-height: 1.1;
-    margin: 0;
+    margin: 0 0 4.5vh;
     letter-spacing: 0.01em;
     opacity: 0;
     color: var(--ink);
   }
 
-  .rule {
-    width: 64px;
-    height: 1px;
-    background: var(--accent);
-    margin: 28px auto;
+  .idle-logo {
+    display: block;
+    height: clamp(70px, 16vh, 220px);
+    width: auto;
+    margin: 0 0 4.5vh;
     opacity: 0;
+  }
+
+  .rule {
+    width: 130px;
+    height: 3px;
+    background: var(--accent);
+    margin: 0 0 3.2vh;
+    opacity: 0;
+    transform-origin: left center;
     transform: scaleX(0);
   }
 
   .tagline {
     font-family: var(--font-label);
-    font-size: clamp(13px, 1.3vw, 17px);
+    font-size: clamp(16px, 1.7vw, 40px);
     letter-spacing: 0.4em;
     text-transform: uppercase;
     color: var(--accent);
@@ -99,7 +106,7 @@
 
   /* entrance choreography */
   .stage.in .eyebrow { animation: rise 0.9s ease forwards 0.1s; }
-  .stage.in .name { animation: rise 0.9s ease forwards 0.35s; }
+  .stage.in .name, .stage.in .idle-logo { animation: rise 0.9s ease forwards 0.35s; }
   .stage.in .rule { animation: rule-in 0.7s ease forwards 0.9s; }
   .stage.in .tagline { animation: rise 0.9s ease forwards 1.1s; }
 
@@ -128,7 +135,7 @@
   #fsHint.hidden { opacity: 0; pointer-events: none; }
 
   @media (prefers-reduced-motion: reduce) {
-    .stage.in .eyebrow, .stage.in .name, .stage.in .rule, .stage.in .tagline {
+    .stage.in .eyebrow, .stage.in .name, .stage.in .idle-logo, .stage.in .rule, .stage.in .tagline {
       animation: none !important;
       opacity: 1 !important;
       transform: none !important;
@@ -139,7 +146,8 @@
 <body>
   <div class="stage" id="stage">
     <p class="eyebrow" id="eyebrow">Welcome</p>
-    <h1 class="name" id="name">—</h1>
+    <h1 class="name" id="name" style="display:none;">—</h1>
+    <img class="idle-logo" id="idleLogo" src="/logo-light.png" alt="Royal Dental Care" style="display:none;" />
     <div class="rule"></div>
     <p class="tagline" id="tagline">To your personal suite</p>
   </div>
@@ -153,27 +161,37 @@
     var stage = document.getElementById('stage');
     var eyebrowEl = document.getElementById('eyebrow');
     var nameEl = document.getElementById('name');
+    var idleLogoEl = document.getElementById('idleLogo');
     var taglineEl = document.getElementById('tagline');
     var fsHint = document.getElementById('fsHint');
 
     var IDLE_EYEBROW = 'Welcome to';
-    var IDLE_NAME = 'Royal Dental Care';
-    var IDLE_TAGLINE = "We're getting your suite ready";
+    var IDLE_TAGLINE = 'Preparing your suite';
 
-    function play(eyebrow, name, tagline) {
+    function play(eyebrow, tagline, patientName) {
       stage.classList.remove('in');
       void stage.offsetWidth; // restart animation even if content is unchanged
+
       eyebrowEl.textContent = eyebrow;
-      nameEl.textContent = name;
       taglineEl.textContent = tagline;
+
+      if (patientName) {
+        nameEl.textContent = patientName;
+        nameEl.style.display = '';
+        idleLogoEl.style.display = 'none';
+      } else {
+        nameEl.style.display = 'none';
+        idleLogoEl.style.display = '';
+      }
+
       stage.classList.add('in');
     }
 
     function render(entry) {
       if (entry && entry.name) {
-        play('Welcome', entry.name, 'To your personal suite');
+        play('Welcome', 'To your personal suite', entry.name);
       } else {
-        play(IDLE_EYEBROW, IDLE_NAME, IDLE_TAGLINE);
+        play(IDLE_EYEBROW, IDLE_TAGLINE, null);
       }
     }
 
