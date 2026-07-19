@@ -4,66 +4,65 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Welcome — Royal Dental Care</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!--
+  Playfair Display = Latin name text (elegant italic serif)
+  Amiri            = Arabic serif fallback — same "serif" family feeling
+                      for Arabic patient names. Browsers auto-pick whichever
+                      font in the stack actually has glyphs for each
+                      character, so Latin names use Playfair and Arabic
+                      names use Amiri automatically, no extra logic needed.
+  Montserrat       = clean geometric sans for small labels, closest
+                      widely-available match to the logo's wordmark style
+-->
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;1,500;1,600&family=Amiri:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-  /* ───────────────────────────────────────────────────────────
-     BRANDING — pulled from Royal Dental Care's Branding Book 2025.
-     Burnt orange (Santa Fe) background, beige/cream text, charcoal
-     accents. Swap public/logo-light.png / logo-r-light.png if you
-     send over an exact design later.
-     ─────────────────────────────────────────────────────────── */
   :root {
-    --bg-1: #c17f5f;         /* background gradient, top (lighter Santa Fe) */
-    --bg-2: #8f5640;         /* background gradient, bottom (deeper Santa Fe) */
     --ink: #f3ead9;          /* primary text — warm beige/cream */
     --ink-soft: #e2c9ae;     /* secondary text — muted beige */
     --accent: #2b2622;       /* charcoal/black — rule, tagline accents */
-    --font-display: "Playfair Display", "Iowan Old Style", Georgia, serif;
-    --font-label: "Helvetica Neue", Arial, sans-serif;
+    --font-display: "Playfair Display", "Amiri", Georgia, serif;
+    --font-label: "Montserrat", "Helvetica Neue", Arial, sans-serif;
   }
 
   * { box-sizing: border-box; }
   html, body {
     height: 100%;
     margin: 0;
-    background: radial-gradient(120% 90% at 50% 30%, var(--bg-1), var(--bg-2));
     overflow: hidden;
   }
   body {
     display: flex;
-    align-items: center;
+    align-items: flex-end;
     justify-content: center;
     font-family: var(--font-label);
     color: var(--ink);
+    background-image: url('/bg.jpg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
   }
 
-  /* giant translucent "R" watermark, echoing Royal's own brand pattern */
-  .watermark {
-    position: fixed;
-    right: -4vw;
-    bottom: -8vh;
-    height: 78vh;
-    opacity: 0.14;
-    pointer-events: none;
-  }
-
+  /*
+    The background image already carries the ROYAL wordmark (roughly the
+    middle band of the screen) and the large "R" watermark, so the welcome
+    text sits in the clear space below it rather than on top of it.
+  */
   .stage {
     position: relative;
     text-align: center;
-    padding: 0 6vw;
-  }
-
-  .logo {
-    height: clamp(28px, 4vw, 46px);
-    margin: 0 0 40px;
-    opacity: 0;
+    padding: 0 6vw 8vh;
+    width: 100%;
   }
 
   .eyebrow {
+    font-family: var(--font-label);
     font-size: clamp(13px, 1.4vw, 18px);
     letter-spacing: 0.5em;
     text-transform: uppercase;
     color: var(--ink-soft);
-    margin: 0 0 28px;
+    margin: 0 0 22px;
     opacity: 0;
   }
 
@@ -71,10 +70,10 @@
     font-family: var(--font-display);
     font-style: italic;
     font-weight: 500;
-    font-size: clamp(48px, 8vw, 118px);
-    line-height: 1.05;
+    font-size: clamp(44px, 6.4vw, 92px);
+    line-height: 1.1;
     margin: 0;
-    letter-spacing: 0.02em;
+    letter-spacing: 0.01em;
     opacity: 0;
     color: var(--ink);
   }
@@ -83,12 +82,13 @@
     width: 64px;
     height: 1px;
     background: var(--accent);
-    margin: 34px auto;
+    margin: 28px auto;
     opacity: 0;
     transform: scaleX(0);
   }
 
   .tagline {
+    font-family: var(--font-label);
     font-size: clamp(13px, 1.3vw, 17px);
     letter-spacing: 0.4em;
     text-transform: uppercase;
@@ -98,11 +98,10 @@
   }
 
   /* entrance choreography */
-  .stage.in .logo { animation: rise 0.9s ease forwards 0s; }
-  .stage.in .eyebrow { animation: rise 0.9s ease forwards 0.25s; }
-  .stage.in .name { animation: rise 0.9s ease forwards 0.5s; }
-  .stage.in .rule { animation: rule-in 0.7s ease forwards 1.05s; }
-  .stage.in .tagline { animation: rise 0.9s ease forwards 1.25s; }
+  .stage.in .eyebrow { animation: rise 0.9s ease forwards 0.1s; }
+  .stage.in .name { animation: rise 0.9s ease forwards 0.35s; }
+  .stage.in .rule { animation: rule-in 0.7s ease forwards 0.9s; }
+  .stage.in .tagline { animation: rise 0.9s ease forwards 1.1s; }
 
   @keyframes rise {
     from { opacity: 0; transform: translateY(14px); }
@@ -116,10 +115,10 @@
   /* tap-to-fullscreen hint, only shown until the screen goes fullscreen */
   #fsHint {
     position: fixed;
-    bottom: 24px;
+    bottom: 16px;
     left: 50%;
     transform: translateX(-50%);
-    font-size: 12px;
+    font-size: 11px;
     letter-spacing: 0.15em;
     text-transform: uppercase;
     color: var(--ink-soft);
@@ -129,7 +128,7 @@
   #fsHint.hidden { opacity: 0; pointer-events: none; }
 
   @media (prefers-reduced-motion: reduce) {
-    .stage.in .logo, .stage.in .eyebrow, .stage.in .name, .stage.in .rule, .stage.in .tagline {
+    .stage.in .eyebrow, .stage.in .name, .stage.in .rule, .stage.in .tagline {
       animation: none !important;
       opacity: 1 !important;
       transform: none !important;
@@ -138,9 +137,7 @@
 </style>
 </head>
 <body>
-  <img class="watermark" src="/logo-r-light.png" alt="" />
   <div class="stage" id="stage">
-    <img class="logo" src="/logo-light.png" alt="Royal Dental Care" />
     <p class="eyebrow" id="eyebrow">Welcome</p>
     <h1 class="name" id="name">—</h1>
     <div class="rule"></div>
